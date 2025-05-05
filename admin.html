@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KANDARA TVC - Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .system-health, .attendance-analytics {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+        .alert-danger {
+            background-color: #800000; /* Maroon color */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="admin-panel">
+            <div class="college-header">
+                <h1>KANDARA TECHNICAL AND VOCATIONAL TRAINING COLLEGE</h1>
+                <h2>Admin Panel</h2>
+            </div>
+
+            <div class="admin-actions">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                    Add Student
+                </button>
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="excelDropdown" data-bs-toggle="dropdown">
+                        Excel Operations
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" id="exportStudents">Export Students</a></li>
+                        <li><a class="dropdown-item" href="#" id="importStudents">Import Students</a></li>
+                        <li><a class="dropdown-item" href="#" id="exportAttendance">Export Attendance</a></li>
+                        <li><a class="dropdown-item" href="#" id="importAttendance">Import Attendance</a></li>
+                    </ul>
+                </div>
+                <!-- Add this hidden file input element below the dropdown menu -->
+                <input type="file" id="excelFileInput" class="d-none" accept=".xlsx,.xls">
+                <a href="Index.html" class="btn btn-success">
+                    <i class="fas fa-door-open"></i> Return to Gatepass
+                </a>
+                <button class="btn btn-success" id="exportWeeklyAttendance">Export Weekly Attendance</button>
+                <button class="btn btn-success mt-3" id="downloadAttendance">Download Attendance Register</button>
+                <button class="btn btn-danger" id="clearAttendance">Clear Attendance</button>
+                <div class="verification-counter">
+                    <i class="fas fa-user-check"></i>
+                    <span id="dailyVerifications">0</span>
+                    <span class="counter-label">Today's Verifications</span>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="row">
+                    <!-- Registered Students Table -->
+                    <div class="col-md-6 col-sm-12">
+                        <h3>Registered Students</h3>
+                        <table class="table table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Admission Number</th>
+                                    <th>Course</th>
+                                    <th>Fee Status</th>
+                                    <th>Valid Until</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Attendance Records Table -->
+                    <div class="col-md-6 col-sm-12">
+                        <h3>Attendance Records</h3>
+                        <table class="table table-responsive">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Name</th>
+                                    <th>Admission Number</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="system-health">
+                <h3>System Health Dashboard</h3>
+                <canvas id="systemHealthChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="attendance-analytics mt-5">
+                <h3>Attendance Analytics</h3>
+                <canvas id="attendanceAnalyticsChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="notifications">
+                <h3>Notifications</h3>
+                <ul id="notificationList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStudentForm">
+                        <div class="form-group">
+                            <label for="studentName">Full Name</label>
+                            <input type="text" id="studentName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newAdmissionNumber">Admission Number</label>
+                            <input type="text" id="newAdmissionNumber" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newCourse">Course</label>
+                            <input type="text" id="newCourse" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="feeAmount">Fee Amount Paid</label>
+                            <input type="number" id="feeAmount" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="validUntil">Valid Until</label>
+                            <input type="date" id="validUntil" class="form-control" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveStudent">Save Student</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Attendance Modal -->
+    <div class="modal fade" id="viewAttendanceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Attendance Register</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Name</th>
+                                <th>Admission Number</th>
+                                <th>Course</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Import Modal -->
+    <div class="modal fade" id="excelImportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Excel File</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="excelImportForm">
+                        <div class="form-group">
+                            <label for="excelFile">Select Excel File</label>
+                            <input type="file" id="excelFile" class="form-control" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label for="importType">Import Type</label>
+                            <select id="importType" class="form-control" required>
+                                <option value="students">Students</option>
+                                <option value="attendance">Attendance</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="importExcel">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <script>
+        // Save Student Logic
+        document.getElementById('saveStudent').addEventListener('click', function () {
+            const studentName = document.getElementById('studentName').value;
+            const admissionNumber = document.getElementById('newAdmissionNumber').value;
+            const course = document.getElementById('newCourse').value;
+            const feeAmount = document.getElementById('feeAmount').value;
+            const validUntil = document.getElementById('validUntil').value;
+
+            if (studentName && admissionNumber && course && feeAmount && validUntil) {
+                // Retrieve existing students from localStorage
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+
+                // Check if the student already exists
+                const existingStudent = students.find(student => student.admissionNumber === admissionNumber);
+                if (existingStudent) {
+                    alert('A student with this admission number already exists.');
+                    return;
+                }
+
+                // Add the new student to the list
+                students.push({
+                    studentName,
+                    admissionNumber,
+                    course,
+                    feeAmount,
+                    validUntil
+                });
+
+                // Save the updated list back to localStorage
+                localStorage.setItem('students', JSON.stringify(students));
+
+                // Update the table
+                loadStudents();
+
+                alert('Student added successfully!');
+                document.getElementById('addStudentForm').reset();
+            } else {
+                alert('Please fill in all fields.');
+            }
+        });
+
+        // Load Students from localStorage
+        function loadStudents() {
+            const students = JSON.parse(localStorage.getItem('students')) || [];
+            const studentsTableBody = document.getElementById('studentsTableBody');
+            studentsTableBody.innerHTML = '';
+
+            students.forEach(student => {
+                const studentRow = `
+                    <tr>
+                        <td>${student.studentName}</td>
+                        <td>${student.admissionNumber}</td>
+                        <td>${student.course}</td>
+                        <td>${student.feeAmount}</td>
+                        <td>${student.validUntil}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editStudent('${student.admissionNumber}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.admissionNumber}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                studentsTableBody.insertAdjacentHTML('beforeend', studentRow);
+            });
+        }
+
+        // Delete Student Logic
+        function deleteStudent(admissionNumber) {
+            if (confirm('Are you sure you want to delete this student?')) {
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+                const updatedStudents = students.filter(student => student.admissionNumber !== admissionNumber);
+                localStorage.setItem('students', JSON.stringify(updatedStudents));
+                loadStudents();
+                alert('Student deleted successfully!');
+            }
+        }
+
+        // Edit Student Logic
+        function editStudent(admissionNumber) {
+            const students = JSON.parse(localStorage.getItem('students')) || [];
+            const student = students.find(student => student.admissionNumber === admissionNumber);
+
+            if (student) {
+                const newName = prompt('Enter new name:', student.studentName);
+                const newCourse = prompt('Enter new course:', student.course);
+                const newFeeStatus = prompt('Enter new fee status:', student.feeAmount);
+
+                if (newName && newCourse && newFeeStatus) {
+                    student.studentName = newName;
+                    student.course = newCourse;
+                    student.feeAmount = newFeeStatus;
+
+                    localStorage.setItem('students', JSON.stringify(students));
+                    loadStudents();
+                    alert('Student details updated successfully!');
+                } else {
+                    alert('All fields are required!');
+                }
+            } else {
+                alert('Student not found!');
+            }
+        }
+
+        // Load students on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            // Load students and attendance on page load
+            loadStudents();
+            loadAttendance();
+
+            // Handle Excel Import
+            const excelFileInput = document.getElementById('excelFileInput');
+
+            // Trigger file input when "Import Students" or "Import Attendance" is clicked
+            document.getElementById('importStudents').addEventListener('click', function () {
+                excelFileInput.dataset.importType = 'students';
+                excelFileInput.click();
+            });
+
+            document.getElementById('importAttendance').addEventListener('click', function () {
+                excelFileInput.dataset.importType = 'attendance';
+                excelFileInput.click();
+            });
+
+            // Handle file selection and import
+            excelFileInput.addEventListener('change', function (event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+
+                        // Assume the first sheet contains the data
+                        const sheetName = workbook.SheetNames[0];
+                        const sheetData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+                        if (excelFileInput.dataset.importType === 'students') {
+                            importStudents(sheetData);
+                        } else if (excelFileInput.dataset.importType === 'attendance') {
+                            importAttendance(sheetData);
+                        }
+
+                        // Clear the file input value to allow re-importing the same file
+                        excelFileInput.value = '';
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+            });
+
+            // Import Students
+            function importStudents(data) {
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+                data.forEach(row => {
+                    const { Name, AdmissionNumber, Course, FeeStatus, ValidUntil } = row;
+                    if (Name && AdmissionNumber && Course && FeeStatus && ValidUntil) {
+                        // Check if the student already exists
+                        const existingStudent = students.find(student => student.admissionNumber === AdmissionNumber);
+                        if (!existingStudent) {
+                            students.push({
+                                studentName: Name,
+                                admissionNumber: AdmissionNumber,
+                                course: Course,
+                                feeAmount: FeeStatus,
+                                validUntil: ValidUntil,
+                            });
+                        }
+                    }
+                });
+
+                // Save to localStorage and reload the table
+                localStorage.setItem('students', JSON.stringify(students));
+                loadStudents();
+                alert('Students imported successfully!');
+            }
+
+            // Import Attendance
+            function importAttendance(data) {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                data.forEach(row => {
+                    const { Date, Time, Name, AdmissionNumber, Course, Status } = row;
+                    if (Date && Time && Name && AdmissionNumber && Course && Status) {
+                        attendance.push({
+                            date: Date,
+                            time: Time,
+                            name: Name,
+                            admissionNumber: AdmissionNumber,
+                            course: Course,
+                            status: Status,
+                        });
+                    }
+                });
+
+                // Save to localStorage and reload the table
+                localStorage.setItem('attendance', JSON.stringify(attendance));
+                loadAttendance();
+                alert('Attendance imported successfully!');
+            }
+
+            // Export Students
+            document.getElementById('exportStudents').addEventListener('click', function () {
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+                if (students.length === 0) {
+                    alert('No students data to export.');
+                    return;
+                }
+
+                const worksheet = XLSX.utils.json_to_sheet(students);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+
+                XLSX.writeFile(workbook, 'students.xlsx');
+                alert('Students data exported successfully!');
+            });
+
+            // Export Attendance
+            document.getElementById('exportAttendance').addEventListener('click', function () {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                if (attendance.length === 0) {
+                    alert('No attendance data to export.');
+                    return;
+                }
+
+                const worksheet = XLSX.utils.json_to_sheet(attendance);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+
+                XLSX.writeFile(workbook, 'attendance.xlsx');
+                alert('Attendance data exported successfully!');
+            });
+
+            // Export Weekly Attendance
+            document.getElementById('exportWeeklyAttendance').addEventListener('click', function () {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                const today = new Date();
+                const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+
+                if (dayOfWeek === 5) { // Check if it's Friday
+                    if (attendance.length === 0) {
+                        alert('No attendance data to export.');
+                        return;
+                    }
+
+                    const worksheet = XLSX.utils.json_to_sheet(attendance);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+
+                    XLSX.writeFile(workbook, `attendance_week_${today.toISOString().split('T')[0]}.xlsx`);
+                    alert('Weekly attendance data exported successfully!');
+                } else {
+                    alert('Attendance export is only available on Fridays.');
+                }
+            });
+
+            // Load Students from localStorage
+            function loadStudents() {
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+                const studentsTableBody = document.getElementById('studentsTableBody');
+                studentsTableBody.innerHTML = '';
+
+                students.forEach(student => {
+                    const studentRow = `
+                        <tr>
+                            <td>${student.studentName}</td>
+                            <td>${student.admissionNumber}</td>
+                            <td>${student.course}</td>
+                            <td>${student.feeAmount}</td>
+                            <td>${student.validUntil}</td>
+                            <td>
+                                <button class="btn btn-warning btn-sm" onclick="editStudent('${student.admissionNumber}')">Edit</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteStudent('${student.admissionNumber}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    studentsTableBody.insertAdjacentHTML('beforeend', studentRow);
+                });
+            }
+
+            // Load Attendance from localStorage
+            function loadAttendance() {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                const attendanceTableBody = document.getElementById('attendanceTableBody');
+                attendanceTableBody.innerHTML = ''; // Clear the table before reloading
+
+                attendance.forEach(record => {
+                    const attendanceRow = `
+                        <tr>
+                            <td>${record.date}</td>
+                            <td>${record.time}</td>
+                            <td>${record.name}</td>
+                            <td>${record.admissionNumber}</td>
+                            <td>${record.course}</td>
+                            <td>${record.status}</td>
+                        </tr>
+                    `;
+                    attendanceTableBody.insertAdjacentHTML('beforeend', attendanceRow);
+                });
+            }
+        });
+
+        function deleteAttendanceRecord(index) {
+            if (confirm('Are you sure you want to delete this attendance record?')) {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                attendance.splice(index, 1); // Remove the record at the specified index
+                localStorage.setItem('attendance', JSON.stringify(attendance)); // Save the updated attendance
+                loadAttendance(); // Refresh the table
+                alert('Attendance record deleted successfully!');
+            }
+        }
+    </script>
+    <script>
+        // Fetch maintenance mode status from the backend
+        fetch('http://localhost:3000/api/maintenance-mode')
+            .then(response => response.json())
+            .then(data => {
+                if (data.maintenanceMode) {
+                    // Display maintenance message
+                    const maintenanceMessage = document.createElement('div');
+                    maintenanceMessage.className = 'alert alert-warning text-center';
+                    maintenanceMessage.textContent = 'System Under Maintenance. Normal operations will resume once done.';
+                    document.body.prepend(maintenanceMessage);
+
+                    // Disable all inputs and buttons
+                    document.querySelectorAll('input, button, select, textarea').forEach(element => {
+                        element.disabled = true;
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching maintenance mode status:', error);
+            });
+    </script>
+    <script>
+        document.getElementById('adminPasswordForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/authenticate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Authentication successful!');
+                    window.location.href = 'admin.html';
+                } else {
+                    alert(result.message || 'Invalid password');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        });
+    </script>
+    <script>
+        document.getElementById('verifyAdmission').addEventListener('click', function () {
+            const admissionNumber = document.getElementById('admissionNumberInput').value.trim();
+            const students = JSON.parse(localStorage.getItem('students')) || [];
+            const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+            const student = students.find(student => student.admissionNumber === admissionNumber);
+
+            if (student) {
+                const today = new Date();
+                const date = today.toLocaleDateString(); // e.g., "5/5/2025"
+                const time = today.toLocaleTimeString(); // e.g., "10:30:00 AM"
+
+                // Check if the student already has an attendance record for today
+                const existingRecord = attendance.find(record => record.admissionNumber === admissionNumber && record.date === date);
+
+                if (existingRecord) {
+                    alert('Student has already been verified today.');
+                } else {
+                    // Add a new attendance record
+                    attendance.push({
+                        date,
+                        time,
+                        name: student.name,
+                        admissionNumber: student.admissionNumber,
+                        course: student.course,
+                        status: 'Verified',
+                    });
+
+                    // Save the updated attendance to localStorage
+                    localStorage.setItem('attendance', JSON.stringify(attendance));
+
+                    // Refresh the attendance table
+                    loadAttendance();
+
+                    // Show success notification
+                    const resultMessage = document.getElementById('resultMessage');
+                    resultMessage.textContent = 'Student verified successfully!';
+                    resultMessage.className = 'alert alert-success';
+                    resultMessage.classList.remove('d-none');
+                }
+            } else {
+                alert('Student not found!');
+            }
+        });
+    </script>
+    <script>
+        document.getElementById('downloadAttendance').addEventListener('click', function () {
+            const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+            if (attendance.length === 0) {
+                alert('No attendance data to export.');
+                return;
+            }
+
+            // Convert attendance data to a format suitable for Excel
+            const formattedData = attendance.map(record => ({
+                Name: record.name,
+                AdmissionNumber: record.admissionNumber,
+                Course: record.course,
+                Monday: record.days.Monday ? '✔' : '',
+                Tuesday: record.days.Tuesday ? '✔' : '',
+                Wednesday: record.days.Wednesday ? '✔' : '',
+                Thursday: record.days.Thursday ? '✔' : '',
+                Friday: record.days.Friday ? '✔' : '',
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance');
+
+            // Save the file as a non-editable Excel document
+            XLSX.writeFile(workbook, 'attendance_register.xlsx');
+            alert('Attendance register downloaded successfully!');
+        });
+    </script>
+    <script>
+        document.getElementById('clearAttendance').addEventListener('click', function () {
+            if (confirm('Are you sure you want to clear all attendance records?')) {
+                localStorage.removeItem('attendance');
+                loadAttendance();
+                alert('Attendance records cleared!');
+            }
+        });
+    </script>
+    <script>
+        function updateSystemHealth() {
+            const students = JSON.parse(localStorage.getItem('students')) || [];
+            const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+
+            // Update total students
+            document.getElementById('totalStudents').textContent = students.length;
+
+            // Update total attendance records
+            document.getElementById('totalAttendance').textContent = attendance.length;
+
+            // Update system uptime (example: uptime in minutes)
+            const uptime = Math.floor(process.uptime() / 60); // Replace with actual uptime logic if needed
+            document.getElementById('systemUptime').textContent = `${uptime} minutes`;
+        }
+
+        // Call this function after any relevant updates
+        updateSystemHealth();
+    </script>
+    <script>
+        function calculateAttendanceAnalytics() {
+            const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+            const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0 };
+            let totalRecords = 0;
+
+            attendance.forEach(record => {
+                Object.keys(record.days).forEach(day => {
+                    if (record.days[day]) {
+                        days[day]++;
+                        totalRecords++;
+                    }
+                });
+            });
+
+            const averageAttendance = ((totalRecords / (attendance.length * 5)) * 100).toFixed(2);
+            const mostAttendedDay = Object.keys(days).reduce((a, b) => (days[a] > days[b] ? a : b));
+
+            document.getElementById('averageAttendance').textContent = `${averageAttendance}%`;
+            document.getElementById('mostAttendedDay').textContent = mostAttendedDay;
+        }
+
+        calculateAttendanceAnalytics();
+    </script>
+    <script>
+        function addNotification(message) {
+            const notificationList = document.getElementById('notificationList');
+            const notificationItem = document.createElement('li');
+            notificationItem.textContent = message;
+            notificationList.appendChild(notificationItem);
+
+            // Auto-remove notification after 10 seconds
+            setTimeout(() => notificationItem.remove(), 10000);
+        }
+
+        // Example usage
+        addNotification('New student verified!');
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // System Health Bar Chart
+            function renderSystemHealthChart() {
+                const students = JSON.parse(localStorage.getItem('students')) || [];
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                const uptime = Math.floor(process.uptime() / 60); // Uptime in minutes
+
+                const ctx = document.getElementById('systemHealthChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total Students', 'Total Attendance Records', 'System Uptime (mins)'],
+                        datasets: [{
+                            label: 'System Metrics',
+                            data: [students.length, attendance.length, uptime],
+                            backgroundColor: ['#4caf50', '#2196f3', '#ff9800'],
+                            borderColor: ['#388e3c', '#1976d2', '#f57c00'],
+                            borderWidth: 1,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                        },
+                        scales: {
+                            y: { beginAtZero: true },
+                        },
+                    },
+                });
+            }
+
+            // Attendance Analytics Pie Chart
+            function renderAttendanceAnalyticsChart() {
+                const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+                const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0 };
+
+                attendance.forEach(record => {
+                    Object.keys(record.days).forEach(day => {
+                        if (record.days[day]) {
+                            days[day]++;
+                        }
+                    });
+                });
+
+                const ctx = document.getElementById('attendanceAnalyticsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(days),
+                        datasets: [{
+                            label: 'Attendance by Day',
+                            data: Object.values(days),
+                            backgroundColor: ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'],
+                            borderColor: ['#fff', '#fff', '#fff', '#fff', '#fff'],
+                            borderWidth: 1,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top' },
+                        },
+                    },
+                });
+            }
+
+            // Render Charts
+            renderSystemHealthChart();
+            renderAttendanceAnalyticsChart();
+        });
+    </script>
+    <script>
+        function updateAttendanceAnalytics() {
+            const attendance = JSON.parse(localStorage.getItem('attendance')) || [];
+            const days = { Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0 };
+
+            attendance.forEach(record => {
+                const dayOfWeek = new Date(record.date).toLocaleDateString('en-US', { weekday: 'long' });
+                if (days[dayOfWeek] !== undefined) {
+                    days[dayOfWeek]++;
+                }
+            });
+
+            const totalRecords = Object.values(days).reduce((sum, count) => sum + count, 0);
+            const averageAttendance = ((totalRecords / (attendance.length * 5)) * 100).toFixed(2);
+            const mostAttendedDay = Object.keys(days).reduce((a, b) => (days[a] > days[b] ? a : b));
+
+            document.getElementById('averageAttendance').textContent = `${averageAttendance}%`;
+            document.getElementById('mostAttendedDay').textContent = mostAttendedDay;
+        }
+
+        // Call this function after any relevant updates
+        updateAttendanceAnalytics();
+    </script>
+    <script>
+        setInterval(() => {
+            const now = new Date();
+            if (now.getHours() === 0 && now.getMinutes() === 0) {
+                localStorage.removeItem('attendance');
+                console.log('Attendance reset at midnight.');
+            }
+        }, 60000); // Check every minute
+    </script>
+</body>
+</html>
