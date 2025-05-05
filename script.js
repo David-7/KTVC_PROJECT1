@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const day = now.getDay();
         const hour = now.getHours();
         
-        if (day === 0 || day === 6 || hour < 8 || hour >= 17) {
+        if (day === 0 || day === 6 || hour < 8 || hour >= 21) {
             showTimeRestriction();
         } else {
             hideTimeRestriction();
